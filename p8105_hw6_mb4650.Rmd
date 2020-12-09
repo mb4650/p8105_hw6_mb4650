@@ -202,3 +202,83 @@ baby_df_cross %>%
 
 ```
 
+
+## Problem 3
+
+Import dataset. 
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+
+```
+
+Bootstrap
+```{r}
+weather_boot = 
+  weather_df %>%
+    modelr::bootstrap(n = 5000) %>%
+    mutate(
+     models = map(strap, ~lm(tmax ~ tmin, data = .x)),
+     log_beta = map(models, broom::tidy),
+     r_sq = map(models, broom::glance)) 
+```
+
+Plot distribution of r-squared values and find 95% CI.
+```{r}
+r_square = 
+  weather_boot %>%
+  select(-strap, -models, -log_beta) %>%
+  unnest(r_sq) %>%
+  janitor::clean_names() 
+
+r_square %>% 
+  ggplot(aes(x = r_squared)) + geom_density()
+
+conf_int_r = 
+  r_square %>%
+  summarize(
+    ci_lower = quantile(r_squared, 0.025),
+    ci_upper = quantile(r_squared, 0.975))
+
+```
+The distribution of r-squared values appears to be left skewed with it centered around 0.91. 
+
+Plot distribution of log(beta0*beta1) values and find 95% CI.
+```{r}
+log_betas = 
+  weather_boot %>%
+  select(-strap, -models, -r_sq) %>%
+  unnest(log_beta) %>%
+  janitor::clean_names() %>%
+  select(term, estimate) %>%
+  mutate(
+    term = str_replace(term, "\\(Intercept\\)", "intercept")
+  ) %>%
+  pivot_wider(
+    names_from = "term",
+    values_from = "estimate") %>%
+  unnest(intercept, tmin) %>%
+  mutate(
+    log_b = log(intercept*tmin)) 
+  
+log_betas %>%
+  ggplot(aes(x = log_b)) + geom_density()
+
+conf_int_log = 
+  log_betas %>%
+  summarize(
+    ci_lower = quantile(log_b, 0.025),
+    ci_upper = quantile(log_b, 0.975))
+
+
+```
+The distribution of log(beta0*beta1) appears to be approximately normally distributed with a center around 2.01. 
