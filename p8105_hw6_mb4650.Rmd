@@ -141,7 +141,7 @@ baby_df =
 ```
 
 
-Based on the variables in the dataset, I think that a model for the baby's birth weight should have mother's age at delivery, number of live births prior to pregnancy, and average number of cigarettes smoked as predictors. I will start by creating my model:
+Based on the variables in the dataset, I hypothesize that a good model for the baby's birth weight should have mother's age at delivery, number of live births prior to pregnancy, and average number of cigarettes smoked as predictors. I will start by creating my model:
 
 ```{r}
 my_model = 
@@ -151,7 +151,7 @@ my_model_results =
   broom::tidy()
 ```
 
-From the tidied output, I see that the p-value for the previous live births predictor is not significant. 
+From the tidied output, I see that the p-value for the previous live births predictor is not significant, while the rest are significant. 
 
 
 Plot of residuals again fitted values.
@@ -163,6 +163,9 @@ baby_df %>%
   ggplot(aes(x = pred, y = resid)) + 
   geom_point()
 ```
+
+From the plot, we see that the values are centered around 0 for the residuals, with a few outlier values. 
+
 
 Create two more models.
 ```{r}
@@ -202,6 +205,7 @@ baby_df_cross %>%
 
 ```
 
+Based on the violin plot, we see that the model I fit was the worst model with the highest rmse, while the model with the three-way interaction was the best fit as it had the smallest rmse. 
 
 ## Problem 3
 
@@ -250,7 +254,7 @@ conf_int_r =
     ci_upper = quantile(r_squared, 0.975))
 
 ```
-The distribution of r-squared values appears to be left skewed with it centered around 0.91. 
+The distribution of r-squared values appears to be approximately normal with a very slightly tail on the left with it centered around 0.91. Using the 5000 bootstrap estimates, the 95% confidence interval for the r-squared values is between `r conf_int_r %>% pull(ci_lower)` and `r conf_int_r %>% pull(ci_upper)`.   
 
 Plot distribution of log(beta0*beta1) values and find 95% CI.
 ```{r}
@@ -278,7 +282,6 @@ conf_int_log =
   summarize(
     ci_lower = quantile(log_b, 0.025),
     ci_upper = quantile(log_b, 0.975))
-
-
 ```
-The distribution of log(beta0*beta1) appears to be approximately normally distributed with a center around 2.01. 
+
+The distribution of log(beta0*beta1) appears to be approximately normally distributed with a center around 2.01. Using the 5000 bootstrap estimates, the 95% confidence interval for the log_beta is between `r conf_int_log %>% pull(ci_lower)` and `r conf_int_log %>% pull(ci_upper)`.  
